@@ -1,0 +1,43 @@
+body {
+  font-family: Arial, sans-serif;
+  margin: 0;
+  display: flex;
+  justify-content: center;
+  align-items: flex-end; /* Plaats de configurator onderaan */
+  height: 100vh;
+  background-color: #f0f0f0;
+}
+
+#app {
+  background: #fff;
+  padding: 20px;
+  border-radius: 8px;
+  box-shadow: 0 0 10px rgba(0, 0, 0, 0.1);
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  margin-bottom: 20px; /* Voeg wat ruimte toe aan de onderkant */
+}
+
+h2 {
+  margin-top: 0;
+}
+
+.config-option {
+  margin-bottom: 15px;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+}
+
+label {
+  display: block;
+  margin-bottom: 5px;
+}
+
+input[type="color"] {
+  width: 100px; /* Maak de kleurkiezer kleiner */
+  height: 30px;
+  border: none;
+  cursor: pointer;
+}
