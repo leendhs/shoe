@@ -3,25 +3,95 @@
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>3D Model Configurator</title>
-  <link rel="stylesheet" href="styles.css">
+  <title>Three.js Interactive Shoe Model with Textures</title>
+  <style>
+    body { margin: 0; overflow: hidden; }
+    
+  .order-button {
+    position: absolute;
+    bottom: 20px;
+    left: 20px;
+    padding: 10px 20px;
+    font-size: 16px;
+    background-color: #4CAF50;
+    color: white;
+    border: none;
+    border-radius: 5px;
+    cursor: pointer;
+  }
+
+  .order-button:hover {
+    background-color: #45a049;
+  }
+
+  #order-message {
+    position: absolute;
+    top: 50%;
+    left: 50%;
+    transform: translate(-50%, -50%);
+    font-size: 24px;
+    color: black;
+    background: white;
+    padding: 20px;
+    border: 2px solid black;
+    border-radius: 10px;
+    box-shadow: 0 4px 8px rgba(0, 0, 0, 0.1);
+  }
+
+    .colors {
+      position: absolute;
+      display: none;
+      background: white;
+      padding: 10px;
+      border: 1px solid black;
+      border-radius: 5px;
+      box-shadow: 0px 4px 8px rgba(0, 0, 0, 0.1);
+      z-index: 1000;
+    }
+    .color-button {
+      width: 40px;
+      height: 40px;
+      border: none;
+      margin: 5px;
+      cursor: pointer;
+      border-radius: 50%;
+    }
+    #blue-btn { background-color: blue; }
+    #red-btn { background-color: red; }
+    #green-btn { background-color: green; }
+    .texture-button {
+      width: 40px;
+      height: 40px;
+      border: none;
+      margin: 5px;
+      cursor: pointer;
+      border-radius: 5px;
+      background-size: cover;
+    }
+    #texture1-btn { background-image: url('/texture/texture1.jpg'); }
+    #texture2-btn { background-image: url('/texture/texture2.jpg'); }
+
+    
+  </style>
 </head>
 <body>
-  <div id="app">
-    <h2>Model Configurator</h2>
-    <div class="config-option">
-      <label for="sole-color">Sole Color:</label>
-      <input type="color" id="sole-color" name="sole-color" value="#ffffff">
-    </div>
-    <div class="config-option">
-      <label for="laces-color">Laces Color:</label>
-      <input type="color" id="laces-color" name="laces-color" value="#000000">
-    </div>
-    <div class="config-option">
-      <label for="body-color">Body Color:</label>
-      <input type="color" id="body-color" name="body-color" value="#ff0000">
-    </div>
+  <div id="color-menu" class="colors">
+    <button id="blue-btn" class="color-button"></button>
+    <button id="red-btn" class="color-button"></button>
+    <button id="green-btn" class="color-button"></button>
+    <button id="texture1-btn" class="texture-button"></button>
+    <button id="texture2-btn" class="texture-button"></button>
   </div>
-  <script type="module" src="main.js"></script> <!-- Voeg type="module" toe -->
+  <div>
+    <input type="text" id="initialsInput" placeholder="Enter your initials">
+    <button id="addInitialsButton">Add Initials</button>
+  </div>
+
+  <button id="order-btn" class="order-button">Order</button>
+<p id="order-message" style="display: none;">Order made. Thank you!</p>
+
+  
+  <script type="module" src="main.js"></script>
+
 </body>
 </html>

@@ -1,52 +1,50 @@
 import * as THREE from 'three';
 import { GLTFLoader } from 'three/examples/jsm/loaders/GLTFLoader.js';
-import { OrbitControls } from 'three/examples/jsm/controls/OrbitControls.js'; // Import OrbitControls
-import * as dat from 'dat.gui'; // dat.GUI
+import { FontLoader } from 'three/examples/jsm/loaders/FontLoader.js';
+import { TextGeometry } from 'three/examples/jsm/geometries/TextGeometry.js';
+import { OrbitControls } from 'three/examples/jsm/controls/OrbitControls.js';
+
+
+document.getElementById('order-btn').addEventListener('click', () => {
+  const orderMessage = document.getElementById('order-message');
+  orderMessage.style.display = 'block';
+  setTimeout(() => {
+    orderMessage.style.display = 'none';
+  }, 3000); // verdwijnt na 3 seconden
+});
 
 // Scene setup
 const scene = new THREE.Scene();
 const camera = new THREE.PerspectiveCamera(75, window.innerWidth / window.innerHeight, 0.1, 1000);
-
-// Renderer setup
-const renderer = new THREE.WebGLRenderer();
+const renderer = new THREE.WebGLRenderer({ antialias: true });
 renderer.setSize(window.innerWidth, window.innerHeight);
-renderer.shadowMap.enabled = true;  // Enable shadows in the renderer
-renderer.shadowMap.type = THREE.PCFSoftShadowMap;  // Type of shadow (soft shadows)
+renderer.shadowMap.enabled = true;
 document.body.appendChild(renderer.domElement);
 
-// Load the 360 texture (this will be used for reflections)
+// Environment Texture
 const loader = new THREE.TextureLoader();
-const texture360 = loader.load('/texture/garage.png', () => {
-  console.log('Texture loaded successfully');
-}, undefined, (err) => {
-  console.error('Error loading texture:', err);
-});
-
-// Create a sphere for the environment (360-degree texture)
-const geometry = new THREE.SphereGeometry(500, 60, 40); // Large sphere
-const material = new THREE.MeshBasicMaterial({ map: texture360, side: THREE.BackSide }); // Texture on inside
-const sphere = new THREE.Mesh(geometry, material);
+const texture360 = loader.load('/texture/garage.png');
+const sphereGeometry = new THREE.SphereGeometry(500, 60, 40);
+const sphereMaterial = new THREE.MeshBasicMaterial({ map: texture360, side: THREE.BackSide });
+const sphere = new THREE.Mesh(sphereGeometry, sphereMaterial);
 scene.add(sphere);
 
-// Ambient Light (for global illumination)
+// Lighting
 const ambientLight = new THREE.AmbientLight(0xffffff, 2);
 scene.add(ambientLight);
 
-// Directional Light (to simulate sunlight)
 const directionalLight = new THREE.DirectionalLight(0xffffff, 3);
 directionalLight.position.set(10, 10, 10);
-directionalLight.castShadow = true;  // Enable shadow casting for this light
+directionalLight.castShadow = true;
 scene.add(directionalLight);
 
-// Set camera position
+// Camera position
 camera.position.set(0, 10, 30);
 camera.lookAt(0, 0, 0);
 
-// Initialize OrbitControls
+// OrbitControls
 const controls = new OrbitControls(camera, renderer.domElement);
 controls.enableDamping = true;
-controls.dampingFactor = 0.25;
-controls.screenSpacePanning = false;
 
 // Handle window resize
 window.addEventListener('resize', () => {
@@ -57,49 +55,26 @@ window.addEventListener('resize', () => {
 
 // Load GLB model
 const gltfLoader = new GLTFLoader();
-let penguin;
+let selectedObject = null;
 
 gltfLoader.load(
   '/Shoe_compressed.glb',
   (gltf) => {
-    penguin = gltf.scene;
-    penguin.scale.set(50, 50, 50);
-    penguin.position.set(0, 0, 0);
-    penguin.rotation.y = Math.PI / 40;
+    const model = gltf.scene;
+    model.scale.set(50, 50, 50);
+    model.position.set(0, 0, 0);
+    model.rotation.y = Math.PI / 40;
 
-    // Enable shadow casting and receiving for all meshes in the model
-    penguin.traverse((child) => {
+    model.traverse((child) => {
       if (child.isMesh) {
         child.castShadow = true;
         child.receiveShadow = true;
+        child.material = new THREE.MeshStandardMaterial({ color: 0xffffff });
       }
     });
 
-    scene.add(penguin);
-    console.log('Model added to the scene:', penguin);
-
-    // Load the cube texture for environment reflection
-    const cubeLoader = new THREE.CubeTextureLoader();
-    const cubeTexture = cubeLoader.load([ 
-      'posx.jpg', 'negx.jpg',
-      'posy.jpg', 'negy.jpg',
-      'posz.jpg', 'negz.jpg',
-    ]);
-    scene.background = cubeTexture;
-    scene.environment = cubeTexture;
-
-    // Apply a standard material
-    gltf.scene.traverse((child) => {
-      if (child.isMesh) {
-        child.material = new THREE.MeshStandardMaterial({
-          color: 0xFFFFFF,
-          roughness: 0.5,
-          metalness: 0.0,
-          envMap: cubeTexture,
-          envMapIntensity: 1.0
-        });
-      }
-    });
+    scene.add(model);
+    console.log('Model added to the scene:', model);
   },
   undefined,
   (error) => {
@@ -107,88 +82,67 @@ gltfLoader.load(
   }
 );
 
-// Add a ground plane to receive the shadows
-const groundGeometry = new THREE.PlaneGeometry(500, 500);
-const groundMaterial = new THREE.ShadowMaterial({ opacity: 0.5 });
-const ground = new THREE.Mesh(groundGeometry, groundMaterial);
-ground.rotation.x = -Math.PI / 2;  // Rotate the plane to lie flat
-ground.position.y = -5;  // Position it below the model
-ground.receiveShadow = true;  // This plane will receive shadows
-scene.add(ground);
+// Raycaster
+const raycaster = new THREE.Raycaster();
+const mouse = new THREE.Vector2();
 
-// dat.GUI - Adding sliders for adjusting light, camera position, zoom and object rotation
-const gui = new dat.GUI();
-
-// Light settings
-const lightParams = {
-  ambientIntensity: 20,
-  directionalIntensity: 30,
-  directionalX: 10,
-  directionalY: 10,
-  directionalZ: 10,
-};
-
-// Camera settings
-const cameraParams = {
-  cameraX: 0,
-  cameraY: 10,
-  cameraZ: 30,
-  fov: 75,
-};
-
-// Object rotation settings
-const rotationParams = {
-  rotateX: 0,
-  rotateY: 0,
-  rotateZ: 0,
-};
-
-// Create folders for light, camera settings, and object rotation in the GUI
-const lightFolder = gui.addFolder('Lighting');
-lightFolder.add(lightParams, 'ambientIntensity', 0, 100).onChange(updateLighting);
-lightFolder.add(lightParams, 'directionalIntensity', 0, 100).onChange(updateLighting);
-lightFolder.add(lightParams, 'directionalX', -50, 50).onChange(updateLighting);
-lightFolder.add(lightParams, 'directionalY', -50, 50).onChange(updateLighting);
-lightFolder.add(lightParams, 'directionalZ', -50, 50).onChange(updateLighting);
-lightFolder.open();
-
-// Create camera folder in the GUI
-const cameraFolder = gui.addFolder('Camera Position');
-cameraFolder.add(cameraParams, 'cameraX', -50, 50).onChange(updateCameraPosition);
-cameraFolder.add(cameraParams, 'cameraY', -50, 50).onChange(updateCameraPosition);
-cameraFolder.add(cameraParams, 'cameraZ', 1, 100).onChange(updateCameraPosition);
-cameraFolder.add(cameraParams, 'fov', 10, 150).onChange(updateCameraPosition);
-cameraFolder.open();
-
-// Create object rotation folder in the GUI
-const rotationFolder = gui.addFolder('Object Rotation');
-rotationFolder.add(rotationParams, 'rotateX', 0, Math.PI * 2).onChange(updateRotation);
-rotationFolder.add(rotationParams, 'rotateY', 0, Math.PI * 2).onChange(updateRotation);
-rotationFolder.add(rotationParams, 'rotateZ', 0, Math.PI * 2).onChange(updateRotation);
-rotationFolder.open();
-
-// Update lighting based on GUI sliders
-function updateLighting() {
-  ambientLight.intensity = lightParams.ambientIntensity;
-  directionalLight.intensity = lightParams.directionalIntensity;
-  directionalLight.position.set(lightParams.directionalX, lightParams.directionalY, lightParams.directionalZ);
-}
-
-// Update camera position and zoom based on GUI sliders
-function updateCameraPosition() {
-  camera.position.set(cameraParams.cameraX, cameraParams.cameraY, cameraParams.cameraZ);
-  camera.fov = cameraParams.fov;
-  camera.updateProjectionMatrix();
-}
-
-// Update object rotation based on GUI sliders
-function updateRotation() {
-  if (penguin) {
-    penguin.rotation.x = rotationParams.rotateX;
-    penguin.rotation.y = rotationParams.rotateY;
-    penguin.rotation.z = rotationParams.rotateZ;
+function changeColor(mesh, color) {
+  if (mesh && mesh.material) {
+    mesh.material.color.set(color);
+    mesh.material.needsUpdate = true;
   }
 }
+
+function applyTexture(mesh, texture) {
+  if (mesh && mesh.material) {
+    mesh.material.map = texture;
+    mesh.material.needsUpdate = true;
+  }
+}
+
+// Load textures
+const texture1 = loader.load('/texture/texture1.jpg');
+const texture2 = loader.load('/texture/texture2.jpg');
+
+// Mouse click handler
+window.addEventListener('click', (event) => {
+  mouse.x = (event.clientX / window.innerWidth) * 2 - 1;
+  mouse.y = -(event.clientY / window.innerHeight) * 2 + 1;
+
+  raycaster.setFromCamera(mouse, camera);
+  const intersects = raycaster.intersectObjects(scene.children, true);
+
+  if (intersects.length > 0) {
+    selectedObject = intersects[0].object;
+
+    if (selectedObject.isMesh) {
+      const colorMenu = document.getElementById('color-menu');
+      colorMenu.style.display = 'block';
+      colorMenu.style.left = `${event.clientX}px`;
+      colorMenu.style.top = `${event.clientY}px`;
+    }
+  } else {
+    document.getElementById('color-menu').style.display = 'none';
+  }
+});
+
+// Event listeners for buttons
+document.getElementById('blue-btn').addEventListener('click', () => {
+  if (selectedObject) changeColor(selectedObject, 'blue');
+});
+document.getElementById('red-btn').addEventListener('click', () => {
+  if (selectedObject) changeColor(selectedObject, 'red');
+});
+document.getElementById('green-btn').addEventListener('click', () => {
+  if (selectedObject) changeColor(selectedObject, 'green');
+});
+
+document.getElementById('texture1-btn').addEventListener('click', () => {
+  if (selectedObject) applyTexture(selectedObject, texture1);
+});
+document.getElementById('texture2-btn').addEventListener('click', () => {
+  if (selectedObject) applyTexture(selectedObject, texture2);
+});
 
 // Animation loop
 function animate() {
@@ -197,7 +151,4 @@ function animate() {
   requestAnimationFrame(animate);
 }
 
-// Start animation loop
 animate();
-
-
